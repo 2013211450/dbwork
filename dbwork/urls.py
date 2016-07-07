@@ -19,4 +19,12 @@ from databasework import views
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+    url(r'^bts/$', views.bts_query, name="bts_query"),
+    url(r'^cell/$', views.cell_query, name="cell_query"),
+    url(r'^traffic/measurement/$', views.measurement, name="measurement"),
+    url(r'^traffic/$', views.traffic_query, name="traffic_query"),
+    url(r'^congestion/$', views.congestion_query, name="congestion_query"),
+    url(r'^account/login/$', views.account_login, {'template_name':'login.html'}),
+    url(r'^excel/import/$', views.excel_import, name="excel_import"),
+    url(r'^excel/export/$', views.excel_export, name="excel_export")
 ]

@@ -10,31 +10,11 @@ sys.path.append(BASE_DIR)
 # sys.path.append('/home/liuwei/air_conditioner/room/')
 os.environ['DJANGO_SETTINGS_MODULE'] = 'dbwork.settings'
 django.setup()
-from databasework.models import BaseStation
-import threading
-import urllib
-import urllib2
+from databasework.models import Cell
 
-class httptest(threading.Thread):
-
-    def __init__(self, id):
-        threading.Thread.__init__(self)
-        self.id = id
-
-    def run(self):
-        with open("query.txt", "r") as res:
-            for r in res.readlines():
-                self.post_to_url(r.strip(), "http://www.radioreference.com/apps/audio/?ctid=5586")
-
-    def post_to_url(self, test_word, url):
-        data = urllib.urlencode({"username": "liuwei", "password":"xxxxx"})
-        req = urllib2.Request(url=url)
-        resp = urllib2.urlopen(req)
-        print resp
 
 if __name__ == '__main__':
-    t = httptest(3)
-    t.start()
+    Cell.objects.create(id=123456)
     '''
     for i in range(1, 10):
         user = User.objects.filter(username='test'+str(i)).first()

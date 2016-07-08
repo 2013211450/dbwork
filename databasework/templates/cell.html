@@ -1,10 +1,49 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends 'base.html' %}
+{% block main_text %}
+    <script type="text/javascript">
+        function query_cell(){
+        	var new_address = "/cell/?cell_id=" + $("#cell_id").val();
+            window.location.href = new_address;
+        }
+    </script>
+    <style type="text/css">
+    body{ font-size:12px; line-height:24px;}
+    .exp1{font-size:xx-large;}
+    </style>
+	<div><p></p></div></br></br>
+    <div class="row">
+    </div><br/>
+    <div class="container">
+		<div class="row">
+			<div class="col-xs-8">
+				<div class="container-fluid" align="center">
+					<div><h3>CELL 查询</h3></div>
+					<div class="list-inline">
+						<li><p>BTS Name:   {{ data.bts_name }}</p></li>
+						<li><p>Area Name:  {{ data.area_name }}</p></li>
+					</div><br/>
+					<div class="list-inline">
+						<li><p>Longitude:  {{ data.longitude }}</p></li>
+						<li><p>Latitude:   {{ data.latitude }}</p></li>
+					</div><br/>
+					<div class="list-inline">
+						<li><p>Lac：       {{ data.lac }}</p></li>
+						<li><p>RADIOUS:    {{ data.radious }}</p></li>
+					</div><br/>
+					<div class="list-inline">
+						<li><p>LAC：       {{ data.lac }}</p></li>
+						<li><p>BCCH:       {{ data.bcch }}</p></li>
+					</div><br/>
+				</div>
+			</div>
+            <div class="col-xs-4">
+                <div class="list-inline">
+                    <li><input type="text" id="cell_id" value="{{ data.id }}"></li>
+                    <li><button class="btn btn-default pull-right" onclick="query_cell();">查询</button></li>
+                </div></br>
+            </div>
+		</div>
+		<div><p></p></div></br></br></br>
+    </div>
 
-</body>
-</html>
+{% endblock %}

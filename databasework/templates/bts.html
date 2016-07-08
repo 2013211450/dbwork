@@ -1,10 +1,51 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends 'base.html' %}
+{% block main_text %}
+    <script type="text/javascript">
+        function query_bts(){
+        	var new_address = "/bts/?bts_name=" + $("#bts_name").val();
+            window.location.href = new_address;
+        }
+    </script>
+    <style type="text/css">
+    body{ font-size:12px; line-height:24px;}
+    .exp1{font-size:xx-large;}
+    </style>
+	<div><p></p></div></br></br>
+    <div class="row">
+    </div><br/>
+    <div class="container">
+		<div class="row">
+			<div class="col-xs-8">
+				<div class="container-fluid">
+					<div><h3>BTS 查询</h3></div>
+					<div class="list-inline" align="center">
+						<li><p>BSC ID:     {{ data.bsc_id }}</p></li>
+						<li><p>Power:      {{ data.power }}</p></li>
+						<li><p>Company：   {{ data.company }}</p></li>
+					</div></br></br>
+					<div class="list-inline" align="center">
+						<li><p>Longitude:  {{ data.longitude }}</p></li>
+						<li><p>Latitude:   {{ data.latitude }}</p></li>
+						<li><p>Altitude:   {{ data.altitude }}</p></li>
+					</div>
+				</div>
+			</div>
+            <div class="col-xs-4">
+                <div class="stage">
+				<div id="pagelet-write" class="pagelet-write">
+                    <div class="edit-wrap">
+                        <div><h3 style="text-align:center">操作</h3></div>
+                            <div class="list-inline">
+								<li><input type="text" id="bts_name"></li>
+								<li><button class="btn btn-default pull-right" onclick="query_bts();">查询</button></li>
+                            </div></br>
+                        <div><p></p></div></br>
+                    </div>
+			    </div>
+				</div>
+            </div>
+		</div>
+		<div><p></p></div></br></br></br>
+    </div>
 
-</body>
-</html>
+{% endblock %}

@@ -10,11 +10,21 @@ sys.path.append(BASE_DIR)
 # sys.path.append('/home/liuwei/air_conditioner/room/')
 os.environ['DJANGO_SETTINGS_MODULE'] = 'dbwork.settings'
 django.setup()
-from databasework.models import Cell
-
+from databasework.models import Cell, Bts, Msc
+from django.contrib.auth.models import User
 
 if __name__ == '__main__':
-    Cell.objects.create(id=123456)
+    bts = Bts.objects.filter(name='xixi').first()
+    if bts:
+        bts.delete()
+    cell = Cell.objects.filter(id=123).first()
+    if cell:
+        cell.delete()
+    mscs = Msc.objects.all()
+    for r in mscs:
+        print r.id
+        print r.name
+        print r.company
     '''
     for i in range(1, 10):
         user = User.objects.filter(username='test'+str(i)).first()

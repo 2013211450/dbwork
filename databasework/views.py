@@ -9,31 +9,29 @@ from databasework.models import *
 from django.db import connection, transaction
 import json
 import xlrd, xlwt
-
+from const import UPLOADMODEL, CHOICES, FOREIGNKEY_FIELDS
 # Create your views here.
-UPLOADMODEL = {
-    'Cell': Cell,
-    'Msc': Msc,
-    'Bsc': Bsc,
-    'Bts': Bts,
-    'Phone': Phone,
-    'Ms': Ms,
-    'Ant': Ant,
-    'Test': Test,
-    'Fpnt': Fpnt,
-}
-CHOICES = [
-    ('Cell', u'小区Cell信息'),
-    ('Ms', u'移动台MS信息'),
-    ('Msc', 'Msc'),
-    ('Bts', 'Bts'),
-    ('Bsc', 'Bsc'),
-    ('Ant', 'Ant'),
-    ('Phone', 'Phone'),
-    ('Test', 'Test'),
-    ('Fpnt', 'Fpnt'),
-]
 
+def readFile(fn, buf_size=262144):
+    f = open(fn, "rb")
+    while True:
+        c = f.read(buf_size)
+        if c:
+            yield c
+        else:
+            break
+    f.close
+
+def turn_datetime_to_int(attr_str):
+    if attr_str[0] != '0':
+        return int(attr_str)
+    else:
+        while attr_str[0] == '0' and len(attr_str) > 1:
+            attr_str = attr_str[1:]
+        if attr_str[0] == '0':
+            return 0
+        else:
+            return int(attr_str)
 
 def account_login(request):
     user = request.user
@@ -86,6 +84,7 @@ def bts_query(request):
 def cell_query(request):
     user = request.user
     cell_id = request.GET.get('cell_id', None)
+    cell_id = int(cell_id)
     if not cell_id:
         cell = Cell.objects.first()
     else:
@@ -103,61 +102,92 @@ def cell_query(request):
     data['id'] = cell.id
     return render(request, 'cell.html', {'data': data})
 
-
-
 @login_required
-def  traffic_query(request):
+def traffic_query(request):
     if request.method == 'POST':
         mode = int(request.POST.get('mode', 0))
         cell_id = request.POST.get('cell_id', None)
         query_date = request.POST.get('date', None)
         start_time = request.POST.get('start_time', None)
         end_time = request.POST.get('end_time', None)
+        query_date = turn_datetime_to_int(str(query_date))
+        start_time = turn_datetime_to_int(str(start_time))
+        end_time = turn_datetime_to_int(str(end_time))
+        cell_id = int(cell_id)
+        print type(cell_id), cell_id
+        print query_date
+        print start_time
+        print end_time
         if cell_id == None or start_time == None or end_time == None:
             return JsonResponse({'code':-1, 'reason':u'缺少必要的参数'})
         cursor = connection.cursor()
         if mode == 0:
             proc_command = 'HOURLY_TRAFF'
-            query_command = 'select QTIME, QTRAFFAVG, QCONGRATE, QTRAFFLINE from HOURLY_TRAFF'
+            query_command = 'select QTIME, QTRAFFAVG, QTRAFFLINE, QCONGRATE from HOURLY'
         else:
-            proc_command = 'Minute_TRAFF'
             if mode == 1:
-                query_command = 'select QTIME, QTRAFFAVG15, QTRAFFLINE15 from Minute'
+                proc_command = 'Minute_TRAFF15'
             else:
-                query_command = 'select QTIME, QTRAFFAVG, QTRAFFLINE from Minute'
-        cursor.calproc(proc_command, (cell_id, query_date, start_time, end_time))
-        transaction.commit_unless_managed()
+                proc_command = 'Minute_TRAFF'
+            query_command = 'select QTIME, QTRAFFAVG, QTRAFFLINE from Minute'
+        cursor.callproc(proc_command, (cell_id, query_date, start_time, end_time))
+        transaction.commit()
         cursor.execute(query_command)
-        data = cursor.fetchall()
-        return JsonResponse({'code':0, 'data': data, 'mode': mode})
+        data_list = {}
+        data = []
+        data.append([])
+        data.append([])
+        data.append([])
+        data.append([])
+        resp = cursor.fetchall()
+        for r in resp:
+            for i in range(0, len(r)):
+                data[i].append(r[i])
+        data_list['code'] = 0
+        data_list['time'] = data[0]
+        data_list['mode'] = mode
+        data_list['traffavg'] = data[1]
+        data_list['traffline'] = data[2]
+        if mode == 0:
+            data_list['congrate'] = data[3]
+        return JsonResponse(data_list)
     else:
-        return render(request, 'traffic.html', {'user': request.user})
+        return render(request, 'traffic2.html', {'user': request.user})
 
 
 
 @login_required
 def congestion_query(request):
-    if request.method == 'POST':
-        cell_id = request.POST.get('cell_id', None)
-        query_date = request.POST.get('date', None)
-        start_time = request.POST.get('start_time', None)
-        end_time = request.POST.get('end_time', None)
-        if cell_id == None or start_time == None or end_time == None:
-            return JsonResponse({'code':-1, 'reason':u'缺少必要的参数'})
-        cursor = connection.cursor()
-        cursor.calproc('C_PHONE')
-        transaction.commit_unless_managed()
-        phones = Phone.objects.filter(date=query_date, time__gte=start_time, time_lte=end_time).all()
-        data = []
-        for r in phones:
-            data.append({
-                'time': r.time,
-                'traff': r.traff,
-                'rate': r.rate,
-            })
-        return JsonResponse({'code':0, 'data': data})
-    else:
-        return render(request, 'congestion.html', {'user': request.user})
+    congestion_rate = request.GET.get('rate', None)
+    query_date = request.GET.get('date', None)
+    start_time = request.GET.get('start_time', None)
+    end_time = request.GET.get('end_time', None)
+    if congestion_rate and start_time and end_time and query_date:
+        congestion_rate = float(congestion_rate)
+        query_date = turn_datetime_to_int(str(query_date))
+        start_time = turn_datetime_to_int(str(start_time))
+        end_time = turn_datetime_to_int(str(end_time))
+        print congestion_rate
+        print query_date
+        print start_time
+        print  end_time
+        if start_time < end_time:
+            cursor = connection.cursor()
+            cursor.callproc('CONGS_RATE', (congestion_rate, query_date, start_time, end_time))
+            transaction.commit()
+            cursor.execute('select QCELLID, QTIME, QTRAFFAVG, QCONGRATE, QTHRATE from CONGS')
+            data = cursor.fetchall()
+            data_list = []
+            for r in data:
+                data_list.append({
+                    'cell_id': r[0],
+                    'time': r[1],
+                    'traffavg': r[2],
+                    'congrate': r[3],
+                    'thrate': r[4],
+                })
+            return render(request, 'congestion.html', {'user': request.user, 'data': data_list, 'limit_rate': congestion_rate})
+    return render(request, 'congestion.html', {'user': request.user})
 
 
 @login_required
@@ -167,13 +197,24 @@ def measurement(request):
         query_date = request.POST.get('date', None)
         start_time = request.POST.get('start_time', None)
         end_time = request.POST.get('end_time', None)
-        if cell_id == None or start_time == None or end_time == None:
+        if cell_id == None or start_time == None or end_time == None or query_date == None:
             return JsonResponse({'code':-1, 'reason':u'缺少必要的参数'})
+        query_date = turn_datetime_to_int(str(query_date))
+        start_time = turn_datetime_to_int(str(start_time))
+        end_time = turn_datetime_to_int(str(end_time))
+        cell_id = int(cell_id)
+        print type(query_date), query_date
+        print type(start_time), start_time
+        print type(end_time), end_time
+        if start_time > end_time:
+            return JsonResponse({'code':-1, 'reason': u'起始时间不能大于结束时间'})
         cursor = connection.cursor()
-        cursor.calproc('C_PHONE')
-        transaction.commit_unless_managed()
+        cursor.callproc('C_PHONE')
+        transaction.commit()
         phones = Phone.objects.filter(date=query_date, time__gte=start_time, time_lte=end_time).all()
-        data = []
+        time_data = []
+        traff_data = []
+        rate_data = []
         for r in phones:
             data.append({
                 'time': r.time,
@@ -182,18 +223,26 @@ def measurement(request):
             })
         return JsonResponse({'code':0, 'data': data})
     else:
-        return render(request, 'congestion.html', {'user': request.user})
+        return render(request, 'measurement.html', {'user': request.user})
 
 @login_required
-def get_neighbor(request):
+def query_neighbor(request):
     cell_id = request.GET.get('cell_id', None)
+    cell_id = int(cell_id)
     if not cell_id:
         cell = Cell.objects.first()
     else:
         cell = Cell.objects.filter(id=cell_id).first()
     cells = Distr.get_neighbor(cell)
-    return render(request, 'neighbor.html', {"cells": cells})
+    print len(cells)
+    return render(request, 'neighbor.html', {"cells": cells, 'user': request.user})
 
+@login_required
+def calc_neighbor(request):
+    cells = Cell.objects.order_by('id').all()
+    for cell in cells:
+        Distr.calc_neighbor(cell)
+    return JsonResponse({'code': 0})
 
 def excel_import(request):
     if request.method == 'POST':
@@ -219,7 +268,7 @@ def excel_import(request):
         obj = UPLOADMODEL[upload_model]
         rows = sheet.nrows
         cols = sheet.ncols
-        sql = "insert into " + upload_model + ' ('
+        sql = "replace into " + upload_model + ' ('
         for i in range(0, cols):
             sql += str(sheet.cell(0, i).value)
             if i == int(cols) - 1:
@@ -258,29 +307,34 @@ def excel_import(request):
         os.remove(filename)
         return JsonResponse({'code': 0, 'reason': u'导入数据成功'})
 
-def readFile(fn, buf_size=262144):
-    f = open(fn, "rb")
-    while True:
-        c = f.read(buf_size)
-        if c:
-            yield c
-        else:
-            break
-    f.close
 
+@login_required
 def excel_export(request):
     modelname = request.GET.get('downloadname')
     check_model = []
-    for k, v in CHOICES:
-        check_model.append(k)
-    if not modelname in check_model:
+    if not UPLOADMODEL.has_key(modelname):
         return JsonResponse({'code': -1, 'reason': u'没有此数据类型'})
     obj = UPLOADMODEL[modelname]
-    return HttpResponse(readFile(filename))
+    excel = xlwt.Workbook()
+    sheet = excel.add_sheet(modelname)
+    data = obj.objects.all()
+    fieldnames = obj._meta.get_all_field_names()
+    count = obj.objects.count()
+    print fieldnames
+    for i in range(0, len(fieldnames)):
+        sheet.write(0, i, fieldnames[i])
+    for i in range(0, count):
+        for j in range(0, len(fieldnames)):
+            value = getattr(data[i], fieldnames[j], None)
+            print type(value), fieldnames[j]
+            if fieldnames[j] in FOREIGNKEY_FIELDS:
+                value = value.pk
+            sheet.write(i + 1, j, value)
+    excel.save('databasework/static/temp.xls')
+    return HttpResponseRedirect('/excel/download/temp.xls')
 
 
 @login_required
 def profile(request):
-
     return render(request, 'excel.html', {'user': request.user, 'choices': CHOICES})
 

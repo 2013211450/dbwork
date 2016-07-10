@@ -2,7 +2,8 @@
 from django.conf.urls import url
 from django.contrib import admin
 from databasework import views
-
+from django.views.static import serve
+from dbwork import settings
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^$', views.profile, name="profile"),                                   #主页， 导入导出页面
@@ -14,5 +15,7 @@ urlpatterns = [
     url(r'^account/login/$', views.account_login, name="account_login"),     #
     url(r'^excel/import/$', views.excel_import, name="excel_import"),       #
     url(r'^excel/export/$', views.excel_export, name="excel_export"),          #
-    url(r'^neighbor/$', views.get_neighbor, name="get_neighbor"),
+    url(r'^neighbor/$', views.query_neighbor, name="get_neighbor"),
+    url(r'^neighbor/calculator/$', views.calc_neighbor, name="get_neighbor"),
+    url(r'^excel/download/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'E:\\project\\dbwork\\databasework\\static\\', 'show_indexes': True}),
 ]

@@ -7,6 +7,9 @@
             $("#typeinput").val(value);
             })
         });
+        function excel_export() {
+            window.open('/excel/export/?downloadname=' + $('.selectpicker').val());
+        }
     </script>
 	<div></div></br></br></br>
     <div><h1 style="text-align:center">数据管理</h1></div></br></br></br>
@@ -24,7 +27,7 @@
                 <input type="file" name="excel"><br/>
                 <input type="submit" class="btn btn-default" value="导入excel表格">
             </form>
-            <button onclick="export();">导出excel文件</button>
+            <button class="btn btn-default" onclick="excel_export();">导出excel文件</button>
 		</div></br></br></br>
 		<div>
 		</div>

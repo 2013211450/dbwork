@@ -58,10 +58,10 @@
 		<div><p></p></div></br></br></br>
 		<div class="row">
 			<div class="col-sm-6">
-				<div id="traff_line" style="width: 400px;height:400px;"></div>
+				<div id="traff_line" style="width: 500px;height:400px;"></div>
 			</div>
             <div class="col-sm-6">
-				<div id="congestion_line" style="width: 400px;height:400px;"></div>
+				<div id="congestion_line" style="width: 500px;height:400px;"></div>
 			</div>
 		</div>
         <script type="text/javascript">
@@ -73,7 +73,8 @@
                 todayHighlight: 1,
                 startView: 2,
                 minView: 2,
-                forceParse: 0
+                forceParse: 0,
+                initialDate: '2007-10-14'
             });
             $('.form_datetime').datetimepicker({
                 language:  'fr',
@@ -91,52 +92,74 @@
             var myChart2 = echarts.init(document.getElementById("congestion_line"));
             var traffavg_name = ['每小时平均话务量', '每15分钟平均话务量', '每分钟平均话务量'];
             var traffline_name = ['每小时每线话务量', '每15分钟每线话务量', '每分钟每线话务量'];
-            var option = {
-                title: {
-                    text: '温度曲线图'
+            option = {
+                title : {
+                    text: '',
                 },
-                tooltip: {
-                    trigger: 'axis',
-                    formatter: function (params) {
-                        params = params[0];
-                        return params.name + '：' + params.value;
-                    },
-                    axisPointer: {
-                        animation: false
-                    }
+                tooltip : {
+                    trigger: 'axis'
                 },
                 legend: {
-                    data: ['', '']
-                 },
-                xAxis: {
-                    type: 'category',
-                    splitLine: {
-                        show: false
-                    },
-                    data: x_data
+                    data:['','']
                 },
-                yAxis: {
-                    type: 'value',
-                    boundaryGap: [0, '100%'],
-                    splitLine: {
-                        show: false
+                toolbox: {
+                    show : true,
+                    feature : {
+                        mark : {show: true},
+                        dataView : {show: true, readOnly: false},
+                        magicType : {show: true, type: ['line', 'bar']},
+                        restore : {show: true},
+                        saveAsImage : {show: true}
                     }
                 },
-                series: [
-                {
-                    name: '数据',
-                    type: 'line',
-                    showSymbol: false,
-                    hoverAnimation: false,
-                    data : y_data,
-                },
-                {
-                    name: '数据',
-                    type: 'line',
-                    showSymbol: false,
-                    hoverAnimation: false,
-                    data : y_data,
-                }
+                calculable : true,
+                xAxis : [
+                    {
+                        type : 'category',
+                        boundaryGap : false,
+                        data : []
+                    }
+                ],
+                yAxis : [
+                    {
+                        type : 'value',
+                        axisLabel : {
+                            formatter: '{value} °C'
+                        }
+                    }
+                ],
+                series : [
+                    {
+                        name:'',
+                        type:'line',
+                        data:[],
+                        markPoint : {
+                            data : [
+                                {type : 'max', name: '最大值'},
+                                {type : 'min', name: '最小值'}
+                            ]
+                        },
+                        markLine : {
+                            data : [
+                                {type : 'average', name: '平均值'}
+                            ]
+                        }
+                    },
+                    {
+                        name:'',
+                        type:'line',
+                        data:[],
+                        markPoint : {
+                            data : [
+                                {name : '周最低', value : -2, xAxis: 1, yAxis: -1.5}
+                            ]
+                        },
+                        markLine : {
+                            data : [
+                                {type : 'average', name : '平均值'}
+                            ]
+                        }
+                    }
                 ]
             };
         	function query_traffic() {
@@ -148,7 +171,7 @@
 					end_time: $('#end_time').val(),
 					}, function(data) {
                         if (data.code == 0) {
-                            option.xAxis.data = data.time;
+                            option.xAxis[0].data = data.time;
                             option.series[0].data = data.traffavg;
                             option.series[0].name = traffavg_name[data.mode];
                             option.legend.data[0] = traffavg_name[data.mode];
@@ -162,6 +185,8 @@
                                 option.series[0].data = data.congrate;
                                 option.series[0].name = '拥塞率'
                                 option.series[1].data = y_data;
+                                option.series[1].name = '';
+                                option.legend.data[1] = '';
                                 option.title.text = '拥塞率';
                                 myChart2.setOption(option);
                             }

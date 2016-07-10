@@ -7,6 +7,7 @@ import sys, os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_DIR)
+from dbwork import  settings
 # sys.path.append('/home/liuwei/air_conditioner/room/')
 os.environ['DJANGO_SETTINGS_MODULE'] = 'dbwork.settings'
 django.setup()
@@ -14,17 +15,7 @@ from databasework.models import Cell, Bts, Msc
 from django.contrib.auth.models import User
 
 if __name__ == '__main__':
-    bts = Bts.objects.filter(name='xixi').first()
-    if bts:
-        bts.delete()
-    cell = Cell.objects.filter(id=123).first()
-    if cell:
-        cell.delete()
-    mscs = Msc.objects.all()
-    for r in mscs:
-        print r.id
-        print r.name
-        print r.company
+    print settings.STATICFILES_DIRS
     '''
     for i in range(1, 10):
         user = User.objects.filter(username='test'+str(i)).first()

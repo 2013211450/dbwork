@@ -37,12 +37,6 @@ class Bsc(models.Model):
     class Meta:
         db_table = 'bsc'
 
-    def setattr(self, key, value):
-        if key == 'msc':
-            self.msc = Msc.objects.filter(id=value).first()
-        elif hasattr(self, key):
-            setattr(self, key, value)
-
 class Bts(models.Model):
 
     name = models.CharField(primary_key=True, max_length=32)
@@ -56,9 +50,6 @@ class Bts(models.Model):
     class Meta:
         db_table = 'bts'
 
-    def setattr(self, key, value):
-        if hasattr(self, key):
-            setattr(self, key, value)
 
 class Ctrl(models.Model):
 
@@ -69,11 +60,6 @@ class Ctrl(models.Model):
         db_table = 'ctrl'
         unique_together = ("bsc", "bts")
 
-    def setattr(self, key, value):
-        if key == 'bsc':
-            self.bsc = Bsc.objects.filter(pk=value).first()
-        elif key == 'bts':
-            self.bts = Bts.objects.filter(pk=value).first()
 
 class Cell(models.Model):
 
@@ -93,11 +79,12 @@ class Cell(models.Model):
     def __unicode__(self):
         return self.bstname + ':' + self.area_name
 
-    def setattr(self, key, value):
+    def getattr(self, key, value):
         if key == 'bts':
-            self.bts = Bts.objects.filter(pk=value).first()
+            return self.bts.pk
         elif hasattr(self, key):
-            setattr(self, key, value)
+            return getattr(self, key, value)
+        return value
 
 class Ant(models.Model):
     cell = models.OneToOneField(Cell, primary_key=True)
@@ -137,11 +124,6 @@ class Idle(models.Model):
         db_table = 'idle'
         unique_together = ("cell", "ms")
 
-    def setattr(self, key, value):
-        if key == 'cell':
-            self.cell = Cell.objects.filter(pk=value).first()
-        elif key == 'ms':
-            self.ms = Ms.objects.filter(pk=value).first()
 
 class Test(models.Model):
 
@@ -154,11 +136,6 @@ class Test(models.Model):
     class Meta:
         db_table = 'test'
 
-    def setattr(self, key, value):
-        if key == 'cell':
-            self.cell = Cell.objects.filter(pk=value).first()
-        elif hasattr(self, key):
-            setattr(self, key, value)
 
 class Phone(models.Model):
 
@@ -203,14 +180,6 @@ class Distr(models.Model):
         db_table = 'distr'
         unique_together = ("cl_cell", "fn_cell")
 
-    def setattr(self, key, value):
-        if key == 'cl_cell':
-            self.cl_cell = Cell.objects.filter(pk=value).first()
-        elif key == 'fn_cell':
-            self.fn_cell = Cell.objects.filter(pk=value).first()
-        elif hasattr(self, key):
-            setattr(self, key, value)
-
     @classmethod
     def get_neighbor(cls, cell):
         return cls.objects.filter(cl_cell=cell).order_by("distance").all()
@@ -220,14 +189,15 @@ class Distr(models.Model):
         lat2 = self.fn_cell.latitude * math.pi / 180
         a = lat1 - lat2
         b = self.cl_cell.longitude * math.pi / 180 - self.fn_cell.longitude * math.pi  / 180
-        s = 2 * math.asin(math.sqrt(math.pow(math.sin(a/2, 2), 2) + math.cos(lat1) * math.cos(lat2) * math.pow(math.sin(b/2), 2)))
+        s = 2 * math.asin(math.sqrt(math.pow(math.sin(a/2), 2) + math.cos(lat1) * math.cos(lat2) * math.pow(math.sin(b/2), 2)))
         s *= 63781370
+        print math.floor(s)
         return int(math.floor(s))
 
 
     @classmethod
-    def cal_neighbor(cls, cell):
-        cells = Cell.objects.all()
+    def calc_neighbor(cls, cell):
+        cells = Cell.objects.order_by('id').all()
         for r in cells:
             if r.id == cell.id:
                 continue
@@ -235,6 +205,7 @@ class Distr(models.Model):
             now.distance = now.get_distance()
             if now.distance < cell.radious:
                 now.save()
+                print r.id, 'and', cell.id
 
 
 class ExcelFile(models.Model):
